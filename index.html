@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pīp's Polygon Adventure — Shape Explorers</title>
+<style>
+  *{ box-sizing:border-box; }
+
+  :root{
+    --navy:#152a63;
+    --blue:#3f6fd8;
+    --sky:#e6f0ff;
+    --line:#cfdcf7;
+    --yellow:#f7c948;
+    --green:#22a06b;
+    --red:#e0533d;
+    --ink:#1d2438;
+    --muted:#6b7ba8;
+  }
+
+  body{
+    margin:0;
+    font-family:"Trebuchet MS","Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 8% -10%, #dfeaff 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #fdf3d8 0%, transparent 55%),
+      #f7faff;
+    line-height:1.55;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(135deg,#0f2050 0%, #1f3f9c 55%, #3f6fd8 100%);
+    color:#fff;
+    text-align:center;
+    padding:38px 20px 46px;
+    border-radius:0 0 34px 34px;
+    box-shadow:0 14px 34px -18px rgba(21,42,99,.9);
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(circle at 12% 30%, rgba(255,255,255,.13) 0 3px, transparent 4px),
+      radial-gradient(circle at 78% 22%, rgba(255,255,255,.10) 0 4px, transparent 5px),
+      radial-gradient(circle at 60% 78%, rgba(255,255,255,.10) 0 3px, transparent 4px),
+      radial-gradient(circle at 28% 82%, rgba(255,255,255,.09) 0 4px, transparent 5px);
+    pointer-events:none;
+  }
+  .eyebrow{
+    position:relative;
+    display:inline-block;
+    margin:0 0 12px;
+    font-size:.72rem;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-weight:700;
+    color:#cfe0ff;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.25);
+    padding:6px 14px;
+    border-radius:999px;
+  }
+  .hero h1{
+    position:relative;
+    margin:0;
+    font-size:clamp(1.9rem, 5vw, 3rem);
+    letter-spacing:-.5px;
+    text-shadow:0 3px 0 rgba(0,0,0,.16);
+  }
+  .tagline{
+    position:relative;
+    margin:12px auto 0;
+    max-width:640px;
+    color:#d8e6ff;
+    font-size:1.02rem;
+  }
+
+  /* ---------- LAYOUT ---------- */
+  main{
+    max-width:1120px;
+    margin:0 auto;
+    padding:26px 18px 60px;
+    display:grid;
+    gap:26px;
+  }
+
+  .card{
+    background:#fff;
+    border:1px solid #e5ecfb;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 18px 40px -30px rgba(21,42,99,.55);
+  }
+
+  .card h2{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:0 0 6px;
+    font-size:1.35rem;
+    color:var(--navy);
+  }
+  .num{
+    display:inline-grid;
+    place-items:center;
+    width:34px; height:34px;
+    flex:0 0 34px;
+    border-radius:12px;
+    background:linear-gradient(135deg,#3f6fd8,#7fa8ff);
+    color:#fff;
+    font-size:1rem;
+    box-shadow:0 6px 14px -6px #3f6fd8;
+  }
+  .lead{ margin:0 0 18px; color:#43507a; }
+
+  /* ---------- CHIPS ---------- */
+  .chip-group{ margin-bottom:14px; }
+  .chip-label{
+    display:block;
+    font-size:.72rem;
+    font-weight:800;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    padding:8px 15px;
+    border-radius:999px;
+    border:2px solid var(--line);
+    background:#fff;
+    color:var(--navy);
+    font-family:inherit;
+    font-size:.86rem;
+    font-weight:700;
+    cursor:pointer;
+    transition:transform .14s, background .18s, border-color .18s, color .18s;
+  }
+  .chip:hover{ transform:translateY(-2px); border-color:var(--blue); }
+  .chip.active{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#fff;
+    box-shadow:0 8px 18px -10px var(--navy);
+  }
+
+  /* ---------- EXPLORER ---------- */
+  .explorer-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 340px;
+    gap:24px;
+    margin-top:6px;
+  }
+  @media (max-width:880px){
+    .explorer-grid{ grid-template-columns:1fr; }
+  }
+
+  .stage-wrap{
+    position:relative;
+    background:radial-gradient(circle at 50% 38%, #ffffff 0%, #eef4ff 78%);
+    border:2px dashed var(--line);
+    border-radius:26px;
+    padding:10px;
+  }
+  #stage{
+    display:block;
+    width:100%;
+    height:auto;
+    touch-action:none;
+    cursor:grab;
+  }
+  #stage:active{ cursor:grabbing; }
+
+  #shapePoly{
+    fill:#bcd8ff;
+    fill-opacity:.9;
+    stroke:var(--navy);
+    stroke-width:3;
+    stroke-linejoin:round;
+    transition:fill .18s, stroke .18s;
+  }
+  #shapePoly.matched{
+    fill:#bff2d8;
+    stroke:var(--green);
+  }
+  .ghost{
+    fill:none;
+    stroke:#9db4dd;
+    stroke-width:2;
+    stroke-dasharray:7 7;
+    stroke-linejoin:round;
+  }
+  .axis{
+    stroke:var(--red);
+    stroke-width:2.5;
+    stroke-dasharray:9 8;
+    stroke-linecap:round;
+  }
+
+  .match-badge{
+    position:absolute;
+    top:12px; right:14px;
+    padding:7px 14px;
+    border-radius:999px;
+    font-size:.8rem;
+    font-weight:800;
+    background:#eef3ff;
+    color:var(--muted);
+    border:2px solid #dbe6fb;
+    transition:.2s;
+    white-space:nowrap;
+    max-width:75%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .match-badge.hit{
+    background:#dcf7e9;
+    border-color:#9fe3c2;
+    color:#0f7a4d;
+    transform:scale(1.04);
+  }
+
+  /* ---------- CONTROLS ---------- */
+  .controls{ margin-top:16px; }
+  #slider{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:12px;
+    border-radius:999px;
+    background:linear-gradient(90deg,#3f6fd8,#8fb6ff);
+    outline:none;
+    cursor:pointer;
+  }
+  #slider::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:26px; height:26px;
+    border-radius:50%;
+    background:#fff;
+    border:4px solid var(--navy);
+    box-shadow:0 4px 12px -3px rgba(21,42,99,.6);
+    cursor:grab;
+  }
+  #slider::-moz-range-thumb{
+    width:20px; height:20px;
+    border-radius:50%;
+    background:#fff;
+    border:4px solid var(--navy);
+    cursor:grab;
+  }
+
+  .btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:14px;
+  }
+  .btn{
+    padding:9px 15px;
+    border-radius:12px;
+    border:2px solid var(--line);
+    background:#fff;
+    color:var(--navy);
+    font-family:inherit;
+    font-weight:700;
+    font-size:.86rem;
+    cursor:pointer;
+    transition:transform .12s, background .18s, border-color .18s, color .18s;
+  }
+  .btn:hover{ transform:translateY(-2px); border-color:var(--blue); }
+  .btn:active{ transform:translateY(0); }
+  .btn.accent{
+    background:linear-gradient(135deg,#3f6fd8,#6d95f0);
+    color:#fff;
+    border-color:transparent;
+    box-shadow:0 10px 20px -12px #3f6fd8;
+  }
+  .btn.accent.on{ background:linear-gradient(135deg,#e0533d,#ff8566); }
+
+  /* ---------- INFO PANEL ---------- */
+  .info-col{
+    background:#f8fbff;
+    border:1px solid #e5ecfb;
+    border-radius:22px;
+    padding:20px;
+    align-self:start;
+  }
+  .info-col h3{
+    margin:0 0 4px;
+    color:var(--navy);
+    font-size:1.12rem;
+  }
+  .stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+    margin:14px 0;
+  }
+  .stat{
+    background:#fff;
+    border:1px solid #e2eaf9;
+    border-radius:14px;
+    padding:9px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .stat span{
+    font-size:.68rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:800;
+    color:var(--muted);
+  }
+  .stat strong{
+    font-size:1.22rem;
+    color:var(--navy);
+  }
+  .note{
+    margin:0;
+    font-size:.9rem;
+    color:#43507a;
+    background:#fff8e1;
+    border:1px solid #ffe9a8;
+    border-radius:14px;
+    padding:11px 13px;
+  }
+
+  .toggles{
+    display:grid;
+    gap:8px;
+    margin-top:16px;
+    font-size:.88rem;
+    font-weight:600;
+    color:#33406b;
+  }
+  .toggles label{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggles input{
+    width:18px; height:18px;
+    accent-color:var(--blue);
+    cursor:pointer;
+  }
+
+  /* ---------- TREE ---------- */
+  .tree-wrap{ overflow-x:auto; padding-bottom:6px; }
+  #tree{ width:100%; min-width:640px; height:auto; display:block; }
+  .tnode rect{ transition:.16s; }
+  .tnode:hover rect{ filter:brightness(.95); stroke-width:3.4; }
+  .hint{
+    font-size:.85rem;
+    color:var(--muted);
+    margin:0 0 12px;
+  }
+
+  /* ---------- QUIZ ---------- */
+  .q{
+    border:1px solid #e5ecfb;
+    border-radius:18px;
+    padding:16px 18px;
+    margin-bottom:14px;
+    background:#fbfdff;
+  }
+  .q-text{ margin:0 0 12px; color:var(--navy); }
+  .q-opts{ display:flex; flex-wrap:wrap; gap:8px; }
+  .opt{
+    padding:9px 15px;
+    border-radius:12px;
+    border:2px solid var(--line);
+    background:#fff;
+    font-family:inherit;
+    font-size:.87rem;
+    font-weight:700;
+    color:#33406b;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .opt:hover:not(:disabled){ border-color:var(--blue); transform:translateY(-2px); }
+  .opt:disabled{ cursor:default; }
+  .opt.correct{ background:#dcf7e9; border-color:#7fd8ae; color:#0f7a4d; }
+  .opt.wrong{ background:#ffe5df; border-color:#f0a294; color:#a52d18; }
+  .q-feedback{
+    margin:12px 0 0;
+    font-size:.88rem;
+    border-radius:12px;
+    padding:10px 13px;
+  }
+  .q-feedback.ok{ background:#e6faf0; color:#0f7a4d; }
+  .q-feedback.no{ background:#fff0ec; color:#a52d18; }
+
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:.84rem;
+    padding:0 20px 46px;
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <p class="eyebrow">Eastlands International School · Year 6 · Chapter 5 · Lesson 5.1</p>
+  <h1>Pīp's Polygon Adventure</h1>
+  <p class="tagline">A bright, hands-on journey through polygon names, quadrilaterals, symmetry and turns.</p>
+</header>
+
+<main>
+
+  <!-- ================= EXPLORER ================= -->
+  <section class="card" id="explorer">
+    <h2><span class="num">1</span> Shape Explorer</h2>
+    <p class="lead">Pick a shape, then <strong>drag it round</strong> (or use the slider) to turn it. Watch how many times it matches itself in one full turn.</p>
+
+    <div id="chips"></div>
+
+    <div class="explorer-grid">
+      <div class="stage-col">
+        <div class="stage-wrap">
+          <svg id="stage" viewBox="0 0 400 400" role="img" aria-label="Interactive polygon">
+            <g id="ghostLayer">
+              <polygon id="ghostPoly" class="ghost"></polygon>
+            </g>
+            <g id="rotGroup">
+              <polygon id="shapePoly"></polygon>
+              <g id="axesGroup"></g>
+            </g>
+            <circle cx="200" cy="200" r="4" fill="#152a63"></circle>
+          </svg>
+          <div id="matchBadge" class="match-badge">Rotated 0°</div>
+        </div>
+
+        <div class="controls">
+          <input type="range" id="slider" min="0" max="360" step="1" value="0" aria-label="Rotation angle" />
+          <div class="btn-row">
+            <button class="btn" id="ccw" title="Turn 15° anticlockwise">↺ 15°</button>
+            <button class="btn" id="cw" title="Turn 15° clockwise">15° ↻</button>
+            <button class="btn accent" id="spin">▶ Auto-spin</button>
+            <button class="btn" id="snap">⤾ Next match</button>
+            <button class="btn" id="reset">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="info-col">
+        <div id="info"></div>
+        <div class="toggles">
+          <label><input type="checkbox" id="showAxes" checked /> Show lines of symmetry</label>
+          <label><input type="checkbox" id="showGhost" checked /> Show starting outline</label>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ================= HIERARCHY ================= -->
+  <section class="card">
+    <h2><span class="num">2</span> Types &amp; Hierarchy of Quadrilaterals</h2>
+    <p class="hint">Shape groups can overlap — a square is also a rectangle, a rhombus and a parallelogram. <strong>Click any box</strong> to explore that shape above.</p>
+    <div class="tree-wrap">
+      <svg id="tree" viewBox="0 0 940 460" role="img" aria-label="Quadrilateral hierarchy diagram"></svg>
+    </div>
+  </section>
+
+  <!-- ================= QUIZ ================= -->
+  <section class="card">
+    <h2><span class="num">3</span> Check Your Understanding</h2>
+    <div id="quiz"></div>
+  </section>
+
+</main>
+
+<footer>Pīp says: you can name polygons by counting sides, spot quadrilateral properties, and explain symmetry and rotation order. Keep looking for shapes all around you!</footer>
+
+<script>
+/* =========================================================
+   GEOMETRY HELPERS
+   ========================================================= */
+const NS = "http://www.w3.org/2000/svg";
+const CX = 200, CY = 200;
+
+/* Vertices of a regular n-gon, first vertex pointing straight up */
+function regularVerts(n, r = 132) {
+  const pts = [];
+  for (let k = 0; k < n; k++) {
+    const a = (-90 + (k * 360) / n) * Math.PI / 180;
+    pts.push([CX + r * Math.cos(a), CY + r * Math.sin(a)]);
+  }
+  return pts;
+}
+
+/* Symmetry-axis angles (degrees from +x axis, screen coords) for a regular n-gon */
+function regularAxes(n) {
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    out.push((((-90 + (k * 180) / n) % 180) + 180) % 180);
+  }
+  return out;
+}
+
+const fmt = v => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+
+/* =========================================================
+   SHAPE LIBRARY
+   ========================================================= */
+const SHAPES = [
+  /* ---- REGULAR POLYGONS ---- */
+  {
+    id: "tri", cat: "regular", name: "Equilateral triangle", sides: 3, regular: true,
+    order: 3, verts: regularVerts(3), axes: regularAxes(3),
+    note: "3 equal sides and 3 equal angles of 60°. Lines of symmetry = 3, smallest turn = 120°."
+  },
+  {
+    id: "square", cat: "regular", name: "Square", sides: 4, regular: true,
+    order: 4, verts: [[60, 60], [340, 60], [340, 340], [60, 340]], axes: [90, 45, 0, 135],
+    note: "4 equal sides and 4 right angles. A square is also a rectangle, a rhombus AND a parallelogram!"
+  },
+  {
+    id: "pent", cat: "regular", name: "Regular pentagon", sides: 5, regular: true,
+    order: 5, verts: regularVerts(5), axes: regularAxes(5),
+    note: "5 equal sides, 5 equal angles. Lines of symmetry = 5, smallest turn = 72°."
+  },
+  {
+    id: "hex", cat: "regular", name: "Regular hexagon", sides: 6, regular: true,
+    order: 6, verts: regularVerts(6), axes: regularAxes(6),
+    note: "6 sides. Lines of symmetry = 6, smallest turn = 360° ÷ 6 = 60°."
+  },
+  {
+    id: "hept", cat: "regular", name: "Regular heptagon", sides: 7, regular: true,
+    order: 7, verts: regularVerts(7), axes: regularAxes(7),
+    note: "7 sides. Smallest turn = 360° ÷ 7 ≈ 51.4°."
+  },
+  {
+    id: "oct", cat: "regular", name: "Regular octagon", sides: 8, regular: true,
+    order: 8, verts: regularVerts(8), axes: regularAxes(8),
+    note: "8 sides. Lines of symmetry = 8, smallest turn = 45°."
+  },
+  {
+    id: "non", cat: "regular", name: "Regular nonagon", sides: 9, regular: true,
+    order: 9, verts: regularVerts(9), axes: regularAxes(9),
+    note: "9 sides (nonagon). Smallest turn = 360° ÷ 9 = 40°."
+  },
+  {
+    id: "dec", cat: "regular", name: "Regular decagon", sides: 10, regular: true,
+    order: 10, verts: regularVerts(10), axes: regularAxes(10),
+    note: "10 sides (decagon). Smallest turn = 360° ÷ 10 = 36°."
+  },
+
+  /* ---- QUADRILATERALS ---- */
+  {
+    id: "rect", cat: "quad", name: "Rectangle", sides: 4, regular: false,
+    order: 2, verts: [[60, 115], [340, 115], [340, 285], [60, 285]], axes: [90, 0],
+    note: "Four right angles; opposite sides equal. 2 lines of symmetry, rotation order 2."
+  },
+  {
+    id: "rhomb", cat: "quad", name: "Rhombus", sides: 4, regular: false,
+    order: 2, verts: [[200, 60], [295, 200], [200, 340], [105, 200]], axes: [90, 0],
+    note: "Four equal sides; opposite angles equal. Its two diagonals are its 2 lines of symmetry."
+  },
+  {
+    id: "para", cat: "quad", name: "Parallelogram", sides: 4, regular: false,
+    order: 2, verts: [[90, 130], [280, 130], [310, 270], [120, 270]], axes: [],
+    note: "Two pairs of parallel sides; opposite sides equal. NO lines of symmetry, but rotation order 2 (it matches at 180°)."
+  },
+  {
+    id: "kite", cat: "quad", name: "Kite", sides: 4, regular: false,
+    order: 1, verts: [[200, 55], [300, 175], [200, 325], [100, 175]], axes: [90],
+    note: "Two pairs of adjacent equal sides. 1 line of symmetry, rotation order 1."
+  },
+  {
+    id: "isotrap", cat: "quad", name: "Isosceles trapezium", sides: 4, regular: false,
+    order: 1, verts: [[90, 275], [310, 275], [250, 125], [150, 125]], axes: [90],
+    note: "One pair of parallel sides plus equal non-parallel sides. 1 line of symmetry, rotation order 1."
+  },
+  {
+    id: "trap", cat: "quad", name: "Trapezium", sides: 4, regular: false,
+    order: 1, verts: [[90, 275], [310, 275], [265, 125], [175, 125]], axes: [],
+    note: "Exactly one pair of parallel sides (Cambridge/UK convention). No lines of symmetry, rotation order 1."
+  },
+
+  /* ---- IRREGULAR ---- */
+  {
+    id: "irrpent", cat: "irregular", name: "Irregular pentagon", sides: 5, regular: false,
+    order: 1, verts: [[200, 55], [300, 140], [272, 320], [128, 320], [100, 140]], axes: [90],
+    note: "5 sides, but only 1 line of symmetry and rotation order 1. A shape's symmetry depends on its actual shape, not just its side count!"
+  }
+];
+
+const SHAPE_MAP = Object.fromEntries(SHAPES.map(s => [s.id, s]));
+
+/* =========================================================
+   EXPLORER STATE + DOM
+   ========================================================= */
+const stage      = document.getElementById("stage");
+const rotGroup   = document.getElementById("rotGroup");
+const shapePoly  = document.getElementById("shapePoly");
+const ghostPoly  = document.getElementById("ghostPoly");
+const axesGroup  = document.getElementById("axesGroup");
+const matchBadge = document.getElementById("matchBadge");
+const infoEl     = document.getElementById("info");
+const slider     = document.getElementById("slider");
+const showAxes   = document.getElementById("showAxes");
+const showGhost  = document.getElementById("showGhost");
+const chipsEl    = document.getElementById("chips");
+const spinBtn    = document.getElementById("spin");
+
+let current  = SHAPES[0];
+let rotation = 0;          // raw rotation (may exceed 360)
+let rafId    = null;       // animation frame for tweening
+let spinning = false;
+let spinLast = 0;
+
+/* =========================================================
+   CHIP MENU
+   ========================================================= */
+const GROUPS = [
+  { label: "Regular polygons (3 – 10 sides)", ids: ["tri", "square", "pent", "hex", "hept", "oct", "non", "dec"] },
+  { label: "Quadrilaterals",                  ids: ["rect", "rhomb", "para", "kite", "isotrap", "trap"] },
+  { label: "Irregular shape",                 ids: ["irrpent"] }
+];
+
+function renderChips() {
+  chipsEl.innerHTML = GROUPS.map(g => `
+    <div class="chip-group">
+      <span class="chip-label">${g.label}</span>
+      <div class="chips">
+        ${g.ids.map(id => `<button class="chip" data-id="${id}">${SHAPE_MAP[id].name}</button>`).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+chipsEl.addEventListener("click", e => {
+  const btn = e.target.closest(".chip");
+  if (btn) selectShape(btn.dataset.id);
+});
+
+function updateChips() {
+  chipsEl.querySelectorAll(".chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.id === current.id);
+  });
+}
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+function renderShape() {
+  const pts = current.verts.map(p => p.join(",")).join(" ");
+  shapePoly.setAttribute("points", pts);
+  ghostPoly.setAttribute("points", pts);
+
+  axesGroup.innerHTML = "";
+  const maxR = Math.max(...current.verts.map(([x, y]) => Math.hypot(x - CX, y - CY)));
+  const L = maxR + 24;
+
+  current.axes.forEach(deg => {
+    const rad = (deg * Math.PI) / 180;
+    const dx = Math.cos(rad) * L;
+    const dy = Math.sin(rad) * L;
+    const line = document.createElementNS(NS, "line");
+    line.setAttribute("x1", (CX - dx).toFixed(2));
+    line.setAttribute("y1", (CY - dy).toFixed(2));
+    line.setAttribute("x2", (CX + dx).toFixed(2));
+    line.setAttribute("y2", (CY + dy).toFixed(2));
+    line.setAttribute("class", "axis");
+    axesGroup.appendChild(line);
+  });
+
+  axesGroup.style.display = showAxes.checked ? "" : "none";
+  ghostPoly.style.display = showGhost.checked ? "" : "none";
+}
+
+function renderInfo() {
+  const s = current;
+  const step = 360 / s.order;
+  infoEl.innerHTML = `
+    <h3>${s.name}</h3>
+    <div class="stats">
+      <div class="stat"><span>Sides</span><strong>${s.sides}</strong></div>
+      <div class="stat"><span>Type</span><strong>${s.regular ? "Regular" : "Irregular"}</strong></div>
+      <div class="stat"><span>Symmetry lines</span><strong>${s.axes.length}</strong></div>
+      <div class="stat"><span>Rotation order</span><strong>${s.order}</strong></div>
+      <div class="stat" style="grid-column:1 / -1">
+        <span>Smallest matching turn</span><strong>${fmt(step)}°</strong>
+      </div>
+    </div>
+    <p class="note">${s.note}</p>
+  `;
+}
+
+/* =========================================================
+   ROTATION + MATCH DETECTION
+   ========================================================= */
+function updateRotation(deg) {
+  rotation = deg;
+  const norm = ((deg % 360) + 360) % 360;
+
+  rotGroup.setAttribute("transform", `rotate(${norm.toFixed(2)} ${CX} ${CY})`);
+
+  if (document.activeElement !== slider) slider.value = norm.toFixed(1);
+
+  const step = 360 / current.order;
+  const k = Math.round(norm / step);
+  const matched = Math.abs(norm - k * step) < 1.2;
+
+  shapePoly.classList.toggle("matched", matched);
+  matchBadge.classList.toggle("hit", matched);
+
+  if (matched) {
+    matchBadge.textContent = `✓ Match! Rotated ${fmt(norm)}°`;
+  } else {
+    matchBadge.textContent = `Rotated ${fmt(norm)}°`;
+  }
+}
+
+/* =========================================================
+   SHAPE SELECTION
+   ========================================================= */
+function selectShape(id) {
+  const s = SHAPE_MAP[id];
+  if (!s) return;
+  stopSpin();
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  current = s;
+  rotation = 0;
+  renderShape();
+  renderInfo();
+  updateChips();
+  updateRotation(0);
+}
+
+/* =========================================================
+   TWEENING
+   ========================================================= */
+function animateTo(target, duration = 550) {
+  stopSpin();
+  if (rafId) cancelAnimationFrame(rafId);
+
+  const start = rotation;
+  const delta = target - start;
+  const t0 = performance.now();
+
+  function frame(t) {
+    const p = Math.min(1, (t - t0) / duration);
+    const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+    updateRotation(start + delta * e);
+    if (p < 1) {
+      rafId = requestAnimationFrame(frame);
+    } else {
+      rafId = null;
+    }
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+/* =========================================================
+   AUTO SPIN
+   ========================================================= */
+const SPIN_SPEED = 75; // degrees per second
+
+function spinLoop(t) {
+  if (!spinning) return;
+  if (!spinLast) spinLast = t;
+  const dt = (t - spinLast) / 1000;
+  spinLast = t;
+  rotation += SPIN_SPEED * dt;
+  updateRotation(rotation);
+  requestAnimationFrame(spinLoop);
+}
+
+function startSpin() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  spinning = true;
+  spinLast = 0;
+  spinBtn.classList.add("on");
+  spinBtn.textContent = "⏸ Stop";
+  requestAnimationFrame(spinLoop);
+}
+
+function stopSpin() {
+  if (!spinning) return;
+  spinning = false;
+  spinBtn.classList.remove("on");
+  spinBtn.textContent = "▶ Auto-spin";
+}
+
+function toggleSpin() {
+  spinning ? stopSpin() : startSpin();
+}
+
+/* =========================================================
+   CONTROLS
+   ========================================================= */
+slider.addEventListener("input", () => {
+  stopSpin();
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  updateRotation(parseFloat(slider.value));
+});
+
+document.getElementById("cw").addEventListener("click", () => {
+  stopSpin();
+  updateRotation(rotation + 15);
+});
+
+document.getElementById("ccw").addEventListener("click", () => {
+  stopSpin();
+  updateRotation(rotation - 15);
+});
+
+spinBtn.addEventListener("click", toggleSpin);
+
+document.getElementById("snap").addEventListener("click", () => {
+  const step = 360 / current.order;
+  const norm = ((rotation % 360) + 360) % 360;
+  const k = Math.floor(norm / step + 1e-6) + 1;
+  animateTo(rotation + (k * step - norm), 500);
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  stopSpin();
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  animateTo(Math.round(rotation / 360) * 360, 380);
+});
+
+showAxes.addEventListener("change", () => {
+  axesGroup.style.display = showAxes.checked ? "" : "none";
+});
+
+showGhost.addEventListener("change", () => {
+  ghostPoly.style.display = showGhost.checked ? "" : "none";
+});
+
+/* =========================================================
+   DRAG TO ROTATE
+   ========================================================= */
+let dragging = false;
+let dragStartAngle = 0;
+let dragStartRotation = 0;
+
+function pointerAngle(evt) {
+  const rect = stage.getBoundingClientRect();
+  const x = ((evt.clientX - rect.left) / rect.width) * 400;
+  const y = ((evt.clientY - rect.top) / rect.height) * 400;
+  return (Math.atan2(y - CY, x - CX) * 180) / Math.PI;
+}
+
+stage.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  stopSpin();
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  dragging = true;
+  stage.setPointerCapture(e.pointerId);
+  dragStartAngle = pointerAngle(e);
+  dragStartRotation = rotation;
+});
+
+stage.addEventListener("pointermove", e => {
+  if (!dragging) return;
+  let d = pointerAngle(e) - dragStartAngle;
+  d = (((d + 180) % 360) + 360) % 360 - 180;   // shortest signed delta
+  updateRotation(dragStartRotation + d);
+});
+
+function endDrag(e) {
+  if (!dragging) return;
+  dragging = false;
+  try { stage.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+stage.addEventListener("pointerup", endDrag);
+stage.addEventListener("pointercancel", endDrag);
+
+/* =========================================================
+   QUADRILATERAL HIERARCHY
+   ========================================================= */
+const TREE_NODES = [
+  { id: "quad",   label: "Quadrilateral",       x: 470, y: 40,  w: 230, h: 48, target: null,       fill: "#efe4ff", stroke: "#7b3fb5" },
+  { id: "kite",   label: "Kite",                x: 110, y: 165, w: 140, h: 46, target: "kite",     fill: "#ffe9e3", stroke: "#e0533d" },
+  { id: "para",   label: "Parallelogram",       x: 450, y: 165, w: 210, h: 48, target: "para",     fill: "#e8f0ff", stroke: "#3f6fd8" },
+  { id: "trap",   label: "Trapezoid",           x: 800, y: 165, w: 180, h: 48, target: "trap",     fill: "#e6faf0", stroke: "#22a06b",
+    caption: "at least 1 pair of parallel sides" },
+  { id: "rhomb",  label: "Rhombus",             x: 230, y: 290, w: 170, h: 48, target: "rhomb",    fill: "#e8f0ff", stroke: "#3f6fd8" },
+  { id: "rect",   label: "Rectangle",           x: 495, y: 290, w: 180, h: 48, target: "rect",     fill: "#e8f0ff", stroke: "#3f6fd8" },
+  { id: "isotrap",label: "Isosceles Trapezoid", x: 800, y: 290, w: 240, h: 48, target: "isotrap",  fill: "#e6faf0", stroke: "#22a06b" },
+  { id: "sq",     label: "Square",              x: 360, y: 415, w: 170, h: 48, target: "square",   fill: "#fff3cd", stroke: "#e0a800" }
+];
+
+const TREE_EDGES = [
+  ["quad", "kite"], ["quad", "para"], ["quad", "trap"],
+  ["para", "rhomb"], ["para", "rect"],
+  ["rhomb", "sq"], ["rect", "sq"],
+  ["trap", "isotrap"]
+];
+
+const NODE_MAP = Object.fromEntries(TREE_NODES.map(n => [n.id, n]));
+
+function renderTree() {
+  const svg = document.getElementById("tree");
+  let html = "";
+
+  TREE_EDGES.forEach(([a, b]) => {
+    const A = NODE_MAP[a], B = NODE_MAP[b];
+    html += `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}"
+              stroke="#b9c6e6" stroke-width="2.5" stroke-linecap="round" />`;
+  });
+
+  TREE_NODES.forEach(n => {
+    html += `
+      <g class="tnode" data-target="${n.target || ""}">
+        <rect x="${n.x - n.w / 2}" y="${n.y - n.h / 2}" width="${n.w}" height="${n.h}" rx="13"
+              fill="${n.fill}" stroke="${n.stroke}" stroke-width="2.5" />
+        <text x="${n.x}" y="${n.y}" text-anchor="middle" dominant-baseline="middle"
+              font-family="Trebuchet MS, sans-serif" font-size="16" font-weight="700" fill="#152a63"
+              style="pointer-events:none">${n.label}</text>
+        ${n.caption ? `<text x="${n.x}" y="${n.y + n.h / 2 + 17}" text-anchor="middle"
+              font-family="Trebuchet MS, sans-serif" font-size="12" fill="#6b7ba8"
+              style="pointer-events:none">${n.caption}</text>` : ""}
+      </g>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+document.getElementById("tree").addEventListener("click", e => {
+  const g = e.target.closest(".tnode");
+  if (!g) return;
+  const target = g.dataset.target;
+  if (!target) return;
+  selectShape(target);
+  document.getElementById("explorer").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+/* =========================================================
+   QUIZ
+   ========================================================= */
+const QUIZ = [
+  {
+    q: "How many sides does a nonagon have?",
+    options: ["7", "8", "9", "10"],
+    answer: 2,
+    explain: "Nonagon = 9 sides. (Octagon 8, nonagon 9, decagon 10.)"
+  },
+  {
+    q: "What makes a polygon regular?",
+    options: [
+      "It has an even number of sides",
+      "All sides equal and all angles equal",
+      "It has at least one line of symmetry",
+      "It is a quadrilateral"
+    ],
+    answer: 1,
+    explain: "A regular polygon has all sides equal AND all angles equal."
+  },
+  {
+    q: "How many lines of symmetry does a regular hexagon have?",
+    options: ["2", "3", "4", "6"],
+    answer: 3,
+    explain: "For a regular polygon with n sides, lines of symmetry = n. A hexagon has 6."
+  },
+  {
+    q: "What is the rotation order of a non-square rectangle?",
+    options: ["1", "2", "3", "4"],
+    answer: 1,
+    explain: "A non-square rectangle matches itself at 180° and at 360°, so its rotation order is 2."
+  },
+  {
+    q: "Is every square a rectangle? Is every rectangle a square?",
+    options: [
+      "Yes to both",
+      "Every square is a rectangle, but not every rectangle is a square",
+      "Every rectangle is a square, but not every square is a rectangle",
+      "No to both"
+    ],
+    answer: 1,
+    explain: "A square has four right angles, so it IS a rectangle. But a rectangle needs four equal sides to be a square — so not every rectangle is a square."
+  }
+];
+
+function renderQuiz() {
+  document.getElementById("quiz").innerHTML = QUIZ.map((item, qi) => `
+    <div class="q" data-q="${qi}">
+      <p class="q-text"><strong>Q${qi + 1}.</strong> ${item.q}</p>
+      <div class="q-opts">
+        ${item.options.map((o, oi) =>
+          `<button class="opt" data-q="${qi}" data-o="${oi}">${o}</button>`).join("")}
+      </div>
+      <p class="q-feedback" hidden></p>
+    </div>
+  `).join("");
+}
+
+document.getElementById("quiz").addEventListener("click", e => {
+  const btn = e.target.closest(".opt");
+  if (!btn) return;
+
+  const qi = Number(btn.dataset.q);
+  const oi = Number(btn.dataset.o);
+  const item = QUIZ[qi];
+  const box = document.querySelector(`.q[data-q="${qi}"]`);
+  if (box.dataset.done) return;
+  box.dataset.done = "1";
+
+  box.querySelectorAll(".opt").forEach((b, i) => {
+    b.disabled = true;
+    if (i === item.answer) b.classList.add("correct");
+    else if (i === oi) b.classList.add("wrong");
+  });
+
+  const fb = box.querySelector(".q-feedback");
+  fb.hidden = false;
+  fb.classList.add(oi === item.answer ? "ok" : "no");
+  fb.textContent = (oi === item.answer ? "✅ Correct! " : "❌ Not quite. ") + item.explain;
+});
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+renderChips();
+renderTree();
+renderQuiz();
+selectShape("pent");
+</script>
+</body>
+</html>
